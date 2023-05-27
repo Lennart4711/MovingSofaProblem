@@ -5,8 +5,10 @@ from geometry import intersect
 
 
 class Polygon:
-    def __init__(self, points) -> None:
+    def __init__(self, points, angle=0) -> None:
         self.points = points
+        self.turned_angle = angle
+
 
     def get_center(self):
         x = 0
@@ -28,10 +30,11 @@ class Polygon:
                     return True
         return False
 
-    # rotate the polygon around its center
     def rotate(self, angle_degrees):
-        center = self.get_center()
+        self.turned_angle += angle_degrees
         angle_radians = math.radians(angle_degrees)
+        center = self.get_center()
+
         rotated_points = []
         for point in self.points:
             # Translate the point to the origin by subtracting the center coordinates
@@ -58,4 +61,4 @@ class Polygon:
         return abs(area) / 2
 
     def copy(self):
-        return Polygon(self.points.copy())
+        return Polygon(self.points.copy(), self.turned_angle)

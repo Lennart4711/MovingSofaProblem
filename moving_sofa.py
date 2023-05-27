@@ -12,8 +12,7 @@ WIDTH = 800
 HEIGHT = 600
 FPS = 0
 SOFA_COLOR = (255, 0, 0)
-AREA_WEIGHT = 1
-DISTANCE_WEIGHT = 1
+
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
@@ -36,28 +35,34 @@ print(sofa_shape.is_self_intersecting())
 def new_generation(n: int):
     sofas = []
     for i in range(n):
-        generated_polygon = generate_points(Vector2(0,0), 15, 100)
+        generated_polygon = generate_points(Vector2(0,0), SOFA_EDGES, 100)
         sofa = Sofa(Vector2(100,50), Polygon(generated_polygon), walls)
         while sofa.polygon.is_self_intersecting() or sofa.intersects_wall():
-            generated_polygon = generate_points(Vector2(0,0), 15, 100)
+            generated_polygon = generate_points(Vector2(0,0), SOFA_EDGES, 100)
             sofa = Sofa(Vector2(100,50), Polygon(generated_polygon), walls)
         sofas.append(sofa)
     return sofas
 
 def calculate_fitness(sofa: Sofa):
-    # Distance to goal (350, 400)
-    distance = Vector2(350, 400).distance_to(sofa.polygon.get_center() + sofa.pos)
-    # Area of sofa
-    area = sofa.polygon.area()
-    return (area * AREA_WEIGHT) / (distance * DISTANCE_WEIGHT)
+    distance_travlled_x = sofa.pos.x - 100
+    distance_travlled_y = sofa.pos.y - 50
+    manhattan_distance = abs(distance_travlled_x) + abs(distance_travlled_y)
+    manhattan_distance = min(manhattan_distance, 590)
 
+    area = sofa.polygon.area()
+    return area, manhattan_distance
+
+AREA_WEIGHT = 0.1
+DISTANCE_WEIGHT = 1
 
 GENERATION_SIZE = 15
-MUTATION_RATE = 0.3
-MAX_MUTATION = 0.5
+MUTATION_RATE = 0.2
+MAX_MUTATION = 10
+SOFA_EDGES = 15
 sofas = new_generation(GENERATION_SIZE)
 
 counter = 0
+generation_counter = 0
 # Game loop
 running = True
 while running:
@@ -76,20 +81,43 @@ while running:
 
     # Draw sofa shape at sofa position
     for sofa in sofas:
-        points = sofa.polygon.points
-        num_points = len(points)
-        for i in range(num_points):
-            start = points[i]
-            end = points[(i + 1) % num_points]
-            pygame.draw.line(screen, SOFA_COLOR, (start[0] + sofa.pos.x, start[1] + sofa.pos.y), (end[0] + sofa.pos.x, end[1] + sofa.pos.y), 2)
-        
-        center = sofa.polygon.get_center()
-        pygame.draw.circle(screen, (0, 0, 0), (int(center.x + sofa.pos.x), int(center.y + sofa.pos.y)), 2)
+        lines = sofa.create_lines()
+        for line in lines:
+            pygame.draw.line(screen, SOFA_COLOR, line[0], line[1], 2)
+        # draw a circle at the center of the sofa
+        pygame.draw.circle(screen, (0, 0, 0), (int(sofa.pos.x), int(sofa.pos.y)), 2)
 
     pygame.display.flip()
     clock.tick(FPS)
 
+    counter += 1
     if counter == 700:
-        new_shapes = new_generation(GENERATION_SIZE)
+        # set all angles to 0 by rotating the polygon -self.angle degrees
+        for sofa in sofas:
+            sofa.polygon.rotate(-sofa.polygon.turned_angle)
+
+        # Remove sofas that have a negative area or a manhattan distance < 500
+        for sofa in sofas:
+            area, distance = calculate_fitness(sofa)
+            if area < 0 or distance < 500:
+                sofas.remove(sofa)
+
+        # sort sofas by fitness
+        sofas.sort(key=lambda x: calculate_fitness(x)[0] * AREA_WEIGHT + calculate_fitness(x)[1] * DISTANCE_WEIGHT, reverse=True)
+
+        new_sofas = []
+        # put the best 5 sofas in the new generation
+        for i in range(5):
+            new_sofas.append(Sofa(Vector2(100,50), Polygon(sofas[i].polygon.points), walls))
+
+        # create new sofas by mutating the best sofas
+        for i in range(GENERATION_SIZE - 5):
+            new_sofas.append(Sofa(Vector2(100,50), Polygon(mutate_polygon(sofas[i].polygon.points, MUTATION_RATE, MAX_MUTATION)), walls))
+
+        sofas = new_sofas
+        counter = 0
+        generation_counter += 1
+        print("Generation: ", generation_counter, "with best area of", calculate_fitness(sofas[0])[0])
+
         
 pygame.quit()
