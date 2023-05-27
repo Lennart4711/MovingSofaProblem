@@ -1,5 +1,5 @@
 import pygame
-from pygame.math import Vector2 # type: ignore
+from pygame.math import Vector2  # type: ignore
 from polygon import Polygon
 from geometry import lines_intersect
 
@@ -14,17 +14,16 @@ class Sofa(pygame.sprite.Sprite):
         self.walls = walls
         self.lines = self.create_lines()
 
-
-    def steer(self, x,y, angle):
+    def steer(self, x, y, angle):
         pos_before_x_movement = self.pos.copy()
         polygon_before_x_movement = self.polygon.copy()
-        self.move(x,0)
+        self.move(x, 0)
         if self.intersects_wall():
             self.pos = pos_before_x_movement
             self.polygon = polygon_before_x_movement
         pos_before_y_movement = self.pos.copy()
         polygon_before_y_movement = self.polygon.copy()
-        self.move(0,y)
+        self.move(0, y)
         if self.intersects_wall():
             self.pos = pos_before_y_movement
             self.polygon = polygon_before_y_movement
@@ -35,8 +34,7 @@ class Sofa(pygame.sprite.Sprite):
             self.pos = pos_before_rotation
             self.polygon = polygon_before_rotation
 
-
-    def move(self, x, y):   
+    def move(self, x, y):
         self.pos.x += x
         self.pos.y += y
 
@@ -50,7 +48,7 @@ class Sofa(pygame.sprite.Sprite):
             (points[i] + self.pos, points[(i + 1) % num_points] + self.pos)
             for i in range(num_points)
         ]
-        
+
     def intersects_wall(self) -> bool:
         for wall in self.walls:
             for line in self.create_lines():

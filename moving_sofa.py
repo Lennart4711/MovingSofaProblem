@@ -1,10 +1,11 @@
 import pygame
+
 pygame.init()
 
 from sofa import Sofa
 from pygame.math import Vector2
 from polygon import Polygon
-from genetic_sofa import generate_points, mutate_polygon
+from genetic_sofa import mutate_polygon, generate_regular
 
 
 # Settings
@@ -19,29 +20,20 @@ clock = pygame.time.Clock()
 
 # walls are tuples of start and end points
 walls = [
-    (Vector2(0,0), Vector2(400,0)),
-    (Vector2(0,100), Vector2(300,100)),
-    (Vector2(400,0), Vector2(400,400)),
-    (Vector2(300,100), Vector2(300,400)),
+    (Vector2(0, 0), Vector2(400, 0)),
+    (Vector2(0, 100), Vector2(300, 100)),
+    (Vector2(400, 0), Vector2(400, 400)),
+    (Vector2(300, 100), Vector2(300, 400)),
 ]
 
 
-
 # Create sofa object
-sofa_shape = Polygon([Vector2(0, 0), Vector2(0, 50), Vector2(25,-25),Vector2(50, 50),  Vector2(50,0)])  # Rectangular shape
+sofa_shape = Polygon(
+    [Vector2(0, 0), Vector2(0, 50), Vector2(25, -25), Vector2(50, 50), Vector2(50, 0)]
+)  # Rectangular shape
 print(sofa_shape.is_self_intersecting())
-#sofa = Sofa(Vector2(25,25), sofa_shape, walls)
+# sofa = Sofa(Vector2(25,25), sofa_shape, walls)
 
-def new_generation(n: int):
-    sofas = []
-    for i in range(n):
-        generated_polygon = generate_points(Vector2(0,0), SOFA_EDGES, 100)
-        sofa = Sofa(Vector2(100,50), Polygon(generated_polygon), walls)
-        while sofa.polygon.is_self_intersecting() or sofa.intersects_wall():
-            generated_polygon = generate_points(Vector2(0,0), SOFA_EDGES, 100)
-            sofa = Sofa(Vector2(100,50), Polygon(generated_polygon), walls)
-        sofas.append(sofa)
-    return sofas
 
 def calculate_fitness(sofa: Sofa):
     distance_travlled_x = sofa.pos.x - 100
@@ -52,6 +44,7 @@ def calculate_fitness(sofa: Sofa):
     area = sofa.polygon.area()
     return area, manhattan_distance
 
+
 AREA_WEIGHT = 0.1
 DISTANCE_WEIGHT = 1
 
@@ -59,7 +52,15 @@ GENERATION_SIZE = 15
 MUTATION_RATE = 0.2
 MAX_MUTATION = 10
 SOFA_EDGES = 15
-sofas = new_generation(GENERATION_SIZE)
+
+# Let sofas be a list of sofas that are regular polygons around a center point
+sofas = []
+for _ in range(GENERATION_SIZE):
+    center = Vector2(100, 50)
+    points = generate_regular(Vector2(0, 0), SOFA_EDGES, 50)
+    sofa = Sofa(center, Polygon(points), walls)
+    sofas.append(sofa)
+
 
 counter = 0
 generation_counter = 0
@@ -71,10 +72,11 @@ while running:
             running = False
 
     for sofa in sofas:
-        # if y coordinate of center of sofa is less than 400, move sofa down
+        # move until the sofa reaches the goal
         if sofa.polygon.get_center().y + sofa.pos.y < 400:
-            sofa.steer(1,1,1)
+            sofa.steer(1, 1, 1)
 
+    # ---- Drawing ----
     screen.fill((255, 255, 255))
     for wall in walls:
         pygame.draw.line(screen, (0, 0, 0), wall[0], wall[1], 2)  # Draw walls
@@ -103,21 +105,36 @@ while running:
                 sofas.remove(sofa)
 
         # sort sofas by fitness
-        sofas.sort(key=lambda x: calculate_fitness(x)[0] * AREA_WEIGHT + calculate_fitness(x)[1] * DISTANCE_WEIGHT, reverse=True)
+        sofas.sort(
+            key=lambda x: calculate_fitness(x)[0] * AREA_WEIGHT
+            + calculate_fitness(x)[1] * DISTANCE_WEIGHT,
+            reverse=True,
+        )
 
-        new_sofas = []
-        # put the best 5 sofas in the new generation
-        for i in range(5):
-            new_sofas.append(Sofa(Vector2(100,50), Polygon(sofas[i].polygon.points), walls))
-
+        new_sofas = [
+            Sofa(Vector2(100, 50), Polygon(sofas[i].polygon.points), walls)
+            for i in range(5)
+        ]
         # create new sofas by mutating the best sofas
-        for i in range(GENERATION_SIZE - 5):
-            new_sofas.append(Sofa(Vector2(100,50), Polygon(mutate_polygon(sofas[i].polygon.points, MUTATION_RATE, MAX_MUTATION)), walls))
-
+        new_sofas.extend(
+            Sofa(
+                Vector2(100, 50),
+                Polygon(
+                    mutate_polygon(sofas[i].polygon.points, MUTATION_RATE, MAX_MUTATION)
+                ),
+                walls,
+            )
+            for i in range(GENERATION_SIZE - 5)
+        )
         sofas = new_sofas
         counter = 0
         generation_counter += 1
-        print("Generation: ", generation_counter, "with best area of", calculate_fitness(sofas[0])[0])
+        print(
+            "Generation: ",
+            generation_counter,
+            "with best area of",
+            calculate_fitness(sofas[0])[0],
+        )
 
-        
+
 pygame.quit()

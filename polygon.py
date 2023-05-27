@@ -1,7 +1,7 @@
 import math
 
 from pygame.math import Vector2
-from geometry import intersect 
+from geometry import intersect
 
 
 class Polygon:
@@ -9,15 +9,14 @@ class Polygon:
         self.points = points
         self.turned_angle = angle
 
-
     def get_center(self):
         x = 0
         y = 0
         for point in self.points:
             x += point[0]
             y += point[1]
-        return Vector2(x/len(self.points), y/len(self.points))
-    
+        return Vector2(x / len(self.points), y / len(self.points))
+
     def is_self_intersecting(self):
         n = len(self.points)
         for i in range(n):
@@ -41,8 +40,12 @@ class Polygon:
             translated_point = point - center
 
             # Rotate the translated point around the origin
-            rotated_x = translated_point.x * math.cos(angle_radians) - translated_point.y * math.sin(angle_radians)
-            rotated_y = translated_point.x * math.sin(angle_radians) + translated_point.y * math.cos(angle_radians)
+            rotated_x = translated_point.x * math.cos(
+                angle_radians
+            ) - translated_point.y * math.sin(angle_radians)
+            rotated_y = translated_point.x * math.sin(
+                angle_radians
+            ) + translated_point.y * math.cos(angle_radians)
 
             # Translate the rotated point back to the original position by adding the center coordinates
             rotated_point = Vector2(rotated_x, rotated_y) + center
