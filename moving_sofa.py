@@ -1,5 +1,4 @@
 import pygame
-
 pygame.init()
 
 from sofa import Sofa
@@ -48,16 +47,16 @@ def calculate_fitness(sofa: Sofa):
 AREA_WEIGHT = 0.1
 DISTANCE_WEIGHT = 1
 
-GENERATION_SIZE = 15
+GENERATION_SIZE = 10
 MUTATION_RATE = 0.2
-MAX_MUTATION = 10
+MAX_MUTATION = 20
 SOFA_EDGES = 15
 
 # Let sofas be a list of sofas that are regular polygons around a center point
 sofas = []
 for _ in range(GENERATION_SIZE):
     center = Vector2(100, 50)
-    points = generate_regular(Vector2(0, 0), SOFA_EDGES, 50)
+    points = generate_regular(Vector2(0, 0), SOFA_EDGES, 49)
     sofa = Sofa(center, Polygon(points), walls)
     sofas.append(sofa)
 
@@ -130,11 +129,12 @@ while running:
         counter = 0
         generation_counter += 1
         print(
-            "Generation: ",
-            generation_counter,
-            "with best area of",
-            calculate_fitness(sofas[0])[0],
+            f"Generation: {generation_counter}, best area: {calculate_fitness(sofas[0])[0]}"
         )
 
 
 pygame.quit()
+
+
+# TODO:
+# - Disallow self-intersecting polygons when mutating

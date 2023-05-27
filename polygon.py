@@ -2,6 +2,7 @@ import math
 
 from pygame.math import Vector2
 from geometry import intersect
+import numpy as np
 
 
 class Polygon:
@@ -29,30 +30,24 @@ class Polygon:
                     return True
         return False
 
+
     def rotate(self, angle_degrees):
         self.turned_angle += angle_degrees
         angle_radians = math.radians(angle_degrees)
         center = self.get_center()
+        cos_angle = math.cos(angle_radians)
+        sin_angle = math.sin(angle_radians)
 
-        rotated_points = []
-        for point in self.points:
+        for i, point in enumerate(self.points):
             # Translate the point to the origin by subtracting the center coordinates
             translated_point = point - center
 
             # Rotate the translated point around the origin
-            rotated_x = translated_point.x * math.cos(
-                angle_radians
-            ) - translated_point.y * math.sin(angle_radians)
-            rotated_y = translated_point.x * math.sin(
-                angle_radians
-            ) + translated_point.y * math.cos(angle_radians)
+            rotated_x = translated_point.x * cos_angle - translated_point.y * sin_angle
+            rotated_y = translated_point.x * sin_angle + translated_point.y * cos_angle
 
             # Translate the rotated point back to the original position by adding the center coordinates
-            rotated_point = Vector2(rotated_x, rotated_y) + center
-
-            rotated_points.append(rotated_point)
-
-        self.points = rotated_points
+            self.points[i] = Vector2(rotated_x, rotated_y) + center
 
     def area(self):
         n = len(self.points)
